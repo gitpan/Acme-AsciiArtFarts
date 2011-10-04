@@ -14,7 +14,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -44,6 +44,9 @@ sub new {
 	$self->{uri}	= 'http://www.asciiartfarts.com';
 	$self->{req}	= HTTP::Request->new(GET => $self->{uri});
 	$self->__get_keywords;
+	$self->{cur_key}= '';
+	$self->{cur_num}= 0;
+	$self->{key_arr}= ();
 	return $self
 }
 
@@ -85,11 +88,37 @@ sub list_keywords {
 	return sort keys %{$self->{keywords}}
 }
 
-#sub get_by_keyword {
-#	my ($self,$keyword)= @_;
-	#exists %{$self->{keywords}} or return 0;
-	
-#}
+=head2 list_by_keyword
+
+	my @art = $aaf->list_by_keyword('matrix');
+
+Returns a list of strip numbers for the given keyword.
+
+=cut
+
+sub list_by_keyword {
+	my ($self,$keyword)= @_;
+	exists $self->{keywords}->{$keyword} or return 0;
+	return @{$self->{keywords}{$keyword}{strips}};
+}
+
+=head2 get_by_num
+
+	print $aaf->get_by_num($art[0]);
+
+	print $aaf->get_by_num(int rand 1000);
+
+Given a strip number as returned by other methods, return the requested strip.
+
+Alternately, given an integer value that is a valid strip number, return the requested strip.
+
+=cut
+
+sub get_by_num {
+	my ($self,$num)	=@_;
+	$num	=~ /^#/	or $num = '#'.$num;
+	return __parse($self->__request("/$self->{strips}{$num}{page}"))
+}
 
 sub __get_keywords {
 	my $self= shift;
@@ -108,11 +137,12 @@ sub __get_keywords {
 			next if /^<ul>/;
 			last if /^<\/ul>/;
 			last if $itr > 1_000_000;
-			#print "DEBUG: _ is $_\n";
 			my($num,$page,$name,$date) = /^<li>(.*?):.*ref="(.*?)">(.*?)<.*l>(.*)</;
-			$self->{keywords}{$key}{$num}{name}	= $name; #print "DEBUG: Added key $key->$num->name = $name\n";
-			$self->{keywords}{$key}{$num}{page}	= $page; #print "DEBUG: Added key $key->$num->page = $page\n";
-			$self->{keywords}{$key}{$num}{date}	= $date; #print "DEBUG: Added key $key->$num->date = $date\n";
+			push @{$self->{keywords}{$key}{strips}}, $num;
+			$self->{strips}{$num}{name}		= $name;
+			$self->{strips}{$num}{page}		= $page; 
+			$self->{strips}{$num}{date}		= $date; 
+			$self->{strips}{$num}{keyword}	= $key;
 		}
 	}
 }
@@ -136,6 +166,8 @@ sub __parse {
 		$found	= 1;
 		next if /^<table cell/;
 		return $res if /^<\/pre>/ and $found;
+		s/&lt;/</g;
+		s/&gt;/>/g;
 		$res	.= "$_\n";
 	}
 }
@@ -200,3 +232,4 @@ See http://dev.perl.org/licenses/ for more information.
 =cut
 
 1;
+
