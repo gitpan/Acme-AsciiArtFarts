@@ -14,7 +14,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -71,8 +71,7 @@ Returns a random strip.
 =cut
 
 sub random {
-	my $self = shift;
-	return __parse($self->__request('/random.cgi'));
+	return __parse($_[0]->__request('/random.cgi'));
 }
 
 =head2 list_keywords
@@ -84,8 +83,7 @@ Returns a list of all keywords by which strips are sorted.
 =cut
 
 sub list_keywords {
-	my $self = shift;
-	return sort keys %{$self->{keywords}}
+	return sort keys %{$_[0]->{keywords}}
 }
 
 =head2 list_by_keyword
@@ -232,4 +230,5 @@ See http://dev.perl.org/licenses/ for more information.
 =cut
 
 1;
+
 
